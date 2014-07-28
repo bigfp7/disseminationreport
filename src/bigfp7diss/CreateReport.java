@@ -164,10 +164,10 @@ public class CreateReport
 		System.out.println("================== Statistics that need credentials =============");
 		if(args.length<4)
 		{
-			System.err.println("Please call CreateReport with 4 parameters: <api-key> <shared secret> <your mailing list email adress> <your mailing list password>");
+			System.err.println("Please call CreateReport with 4 parameters: (your mailing list email adress) (your mailing list password) (slideshare api-key) (slideshare shared secret)");
 			System.exit(1);
 		}
-		slideShare(args[0],args[1]);
-		mailinglist(args[2],args[3]);
+		mailinglist(args[0],args[1]);
+		slideShare(args[2],args[3]);
 	}		
 }
