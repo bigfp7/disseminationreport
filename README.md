@@ -1,4 +1,4 @@
-Please call CreateReport with 4 parameters: (api-key) (shared secret) (your mailing list email adress) (your mailing list password).
+In order to get all statistics, please call CreateReport with 4 parameters: (your mailing list email adress) (your mailing list password) (slideshare api-key) (slideshare shared secret).
 
 Feel free to extend CreateReport by adding additional metrics.
 
