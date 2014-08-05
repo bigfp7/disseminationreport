@@ -1,4 +1,4 @@
-package bigfp7diss;
+package eu.bigproject.dissemination;
 
 import java.io.IOException;
 import java.io.OutputStreamWriter;
@@ -11,17 +11,24 @@ import java.util.Map;
 import java.util.Scanner;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import javax.servlet.http.HttpServlet;
 import com.benfante.jslideshare.SlideShareAPI;
 import com.benfante.jslideshare.SlideShareAPIFactory;
 import com.benfante.jslideshare.messages.Slideshow;
 import com.benfante.jslideshare.messages.User;
 
-public class CreateReport
+public class CreateReport extends HttpServlet
 {	
 	private static final String BIBSONOMY_URL	= "http://www.bibsonomy.org/user/bigfp7";
 	private static final String TWITTER_URL	= "https://twitter.com/BIG_FP7";
 	private static final String	MAILINGLIST_URL	= "http://lists.atosresearch.eu/mailman/private/bigdata/";
 	private static final String	BLOG_URL	= "http://big-project.eu/blog";
+	
+	private static final String MAILINGLIST_EMAIL = FollowAdder.properties.getProperty("mailinglist.email");
+	private static final String MAILINGLIST_PASSWORD = FollowAdder.properties.getProperty("mailinglist.password");
+	
+	private static final String SLIDESHARE_KEY = FollowAdder.properties.getProperty("slideshare.key");
+	private static final String SLIDESHARE_SECRET = FollowAdder.properties.getProperty("slideshare.secret");
 
 	static Map<String,Integer> metrics = new HashMap<>();
 
@@ -31,13 +38,13 @@ public class CreateReport
 		metrics.put(s, v);
 	}
 
-	public static String loadPostContent(String url, String username, String password) throws MalformedURLException, IOException
+	public static String loadPostContent(String url) throws MalformedURLException, IOException
 	{
 		HttpURLConnection connection = (HttpURLConnection) new URL(url).openConnection();
 		connection.setDoOutput(true);
 		connection.setRequestMethod("POST");
 		OutputStreamWriter writer = new OutputStreamWriter(connection.getOutputStream());
-		writer.write("username="+username+"&password="+password);
+		writer.write("username="+MAILINGLIST_EMAIL+"&password="+MAILINGLIST_PASSWORD);
 		writer.close();
 
 		if (connection.getResponseCode() == HttpURLConnection.HTTP_OK)
@@ -53,11 +60,11 @@ public class CreateReport
 		}
 	}
 
-	public static void mailinglist(String email, String password) throws MalformedURLException, IOException
+	public static void mailinglist() throws MalformedURLException, IOException
 	{
 		System.out.println("=== C2 Activities and interactions on blog and discussion lists ===");
 
-		String content = loadPostContent(MAILINGLIST_URL, email, password);
+		String content = loadPostContent(MAILINGLIST_URL);
 		//				System.out.println(content);
 		Matcher matcher = Pattern.compile("href=\"([^\"]+/date.html)\">\\[ Date \\]").matcher(content);
 		int messageCount2014 = 0;
@@ -68,7 +75,7 @@ public class CreateReport
 			System.out.print(".");
 			String monthUrl = matcher.group(1);
 			if(!monthUrl.contains("2014")) continue;
-			String newContent = loadPostContent(MAILINGLIST_URL+monthUrl,email,password);
+			String newContent = loadPostContent(MAILINGLIST_URL+monthUrl);
 			Matcher singleMatcher = Pattern.compile("<b>Messages:</b> (\\d+)<p>").matcher(newContent);
 			singleMatcher.find();
 			messageCount2014+=Integer.valueOf(singleMatcher.group(1));
@@ -110,10 +117,10 @@ public class CreateReport
 		}		
 	}
 
-	public static void slideShare(String apiKey, String sharedSecret)
+	public static void slideShare()
 	{
 		System.out.println("=== C4 Number of figures on BIG Slideshares account ===");
-		SlideShareAPI ssapi = SlideShareAPIFactory.getSlideShareAPI(apiKey,sharedSecret);
+		SlideShareAPI ssapi = SlideShareAPIFactory.getSlideShareAPI(SLIDESHARE_KEY,SLIDESHARE_SECRET);
 
 		User bigProject = ssapi.getSlideshowByUser("BIG-Project");
 
@@ -164,10 +171,10 @@ public class CreateReport
 		System.out.println("================== Statistics that need credentials =============");
 		if(args.length<4)
 		{
-			System.err.println("Please call CreateReport with 4 parameters: (your mailing list email adress) (your mailing list password) (slideshare api-key) (slideshare shared secret)");
+//			System.err.println("Please call CreateReport with 4 parameters: (your mailing list email adress) (your mailing list password) (slideshare api-key) (slideshare shared secret)");
 			System.exit(1);
 		}
-		mailinglist(args[0],args[1]);
-		slideShare(args[2],args[3]);
+		mailinglist();
+		slideShare();
 	}		
 }
