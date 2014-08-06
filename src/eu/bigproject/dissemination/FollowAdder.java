@@ -14,6 +14,7 @@ import java.util.SortedSet;
 import java.util.TreeSet;
 import java.util.stream.Collectors;
 import javax.servlet.ServletException;
+import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -28,6 +29,7 @@ import twitter4j.TwitterFactory;
 import twitter4j.User;
 import twitter4j.auth.AccessToken;
 
+//@WebServlet(name="followadder",value="/followadder")
 public class FollowAdder extends HttpServlet
 {
 	static Properties properties = new Properties();
@@ -35,7 +37,7 @@ public class FollowAdder extends HttpServlet
 	{
 		try
 		{
-			InputStream in = new FileInputStream("access.properties");
+			InputStream in = FollowAdder.class.getResourceAsStream("/access.properties");
 			properties.load(in);
 			in.close();			
 		}
@@ -49,7 +51,7 @@ public class FollowAdder extends HttpServlet
 	//	final static String TAG2 = "#bigdata #eu";
 	private static final String	ACCESS_TOKEN	= properties.getProperty("twitter.accesstoken");
 	private static final String	ACCESS_TOKEN_SECRET	= properties.getProperty("twitter.accesstoken.secret");
-	final static short TWEET_COUNT = 50;
+	final static short TWEET_COUNT = 100;
 	final static short TWEET_COUNT_FROM_USER = 10;
 	final static String SINCE = "2014-06-01";
 	final static GeoLocation EUROPE_CENTER = new GeoLocation(54.9, 25.316667);
@@ -71,9 +73,9 @@ public class FollowAdder extends HttpServlet
 		response.setContentType("text/html");
 		PrintWriter pw = response.getWriter();
 		pw.println("<html>");
-		pw.println("<head><title>Hello World</title></title>");
+		pw.println("<head><title>BIG FP7 Follow Adder</title></head>");
 		pw.println("<body>");
-		pw.println("<h1>Hello FollowAdder</h1>");
+		pw.println("<h1>BIG FP7 Follow Adder</h1>");
 		
 		try{
 			Twitter twitter = new TwitterFactory().getInstance();
@@ -95,10 +97,11 @@ public class FollowAdder extends HttpServlet
 				QueryResult result = twitter.search(userQuery);
 				users = result.getTweets().stream().map(s -> s.getUser()).collect(Collectors.toSet());
 			}
-			List<User> friends = twitter.getFriendsList("@"+USER,1000);
-			if(friends.size()<400) throw new RuntimeException("less than 400 ("+friends.size()+") following, something is wrong");
-			users.removeAll(friends);
-			pw.println(users.size());
+//			List<User> friends = twitter.getFriendsList("@"+USER,1000);
+//			if(friends.size()<400) throw new RuntimeException("less than 400 ("+friends.size()+") following, something is wrong");
+//			pw.println(users.size());
+//			users.removeAll(friends);
+			pw.println(users.size()+" users analyzed");
 			//		{
 			//			Query userQuery = new Query(TAG2);
 			//			userQuery.setSince(SINCE);

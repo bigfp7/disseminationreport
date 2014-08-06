@@ -2,6 +2,7 @@ package eu.bigproject.dissemination;
 
 import java.io.IOException;
 import java.io.OutputStreamWriter;
+import java.io.PrintWriter;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
@@ -11,12 +12,17 @@ import java.util.Map;
 import java.util.Scanner;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import javax.servlet.ServletException;
+import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.HttpServlet;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
 import com.benfante.jslideshare.SlideShareAPI;
 import com.benfante.jslideshare.SlideShareAPIFactory;
 import com.benfante.jslideshare.messages.Slideshow;
 import com.benfante.jslideshare.messages.User;
 
+//@WebServlet(name="createreport",value="/createreport")
 public class CreateReport extends HttpServlet
 {	
 	private static final String BIBSONOMY_URL	= "http://www.bibsonomy.org/user/bigfp7";
@@ -34,7 +40,7 @@ public class CreateReport extends HttpServlet
 
 	static void logMetric(String s,int v)
 	{
-		System.out.println(s+'\t'+v);
+		println(s+'\t'+v);
 		metrics.put(s, v);
 	}
 
@@ -60,12 +66,29 @@ public class CreateReport extends HttpServlet
 		}
 	}
 
+	static StringBuffer sb = new StringBuffer();
+	static PrintWriter htmlOut = null;
+	
+	static void println(String s)
+	{
+		System.out.println(s);
+		if(htmlOut!=null)
+		{
+			htmlOut.println(s+"</br>");
+//		sb.append(s);
+//		sb.append("</br>\n");
+		}
+	}
+	
+	static void println() {sb.append("</br>\n");}
+	
 	public static void mailinglist() throws MalformedURLException, IOException
 	{
-		System.out.println("=== C2 Activities and interactions on blog and discussion lists ===");
+		
+		println("=== C2 Activities and interactions on blog and discussion lists ===");
 
 		String content = loadPostContent(MAILINGLIST_URL);
-		//				System.out.println(content);
+		//				println(content);
 		Matcher matcher = Pattern.compile("href=\"([^\"]+/date.html)\">\\[ Date \\]").matcher(content);
 		int messageCount2014 = 0;
 		int messageCountUntil2013Inclusive = 952;
@@ -81,14 +104,14 @@ public class CreateReport extends HttpServlet
 			messageCount2014+=Integer.valueOf(singleMatcher.group(1));
 			//			if(!matcher.group(1).contains("2014")) messageCountUntil2013Inclusive+=Integer.valueOf(singleMatcher.group(1));
 		}
-		System.out.println();
+		println();
 		logMetric("Message Count",messageCount2014+messageCountUntil2013Inclusive);
-		//		System.out.println("Message Count until 2013 inclusive\t"+messageCountUntil2013Inclusive);
+		//		println("Message Count until 2013 inclusive\t"+messageCountUntil2013Inclusive);
 	}
 
 	public static void bibsonomy() throws MalformedURLException, IOException
 	{
-		System.out.println("=== C6 Academic Publications ===");
+		println("=== C6 Academic Publications ===");
 		String content = loadContent(BIBSONOMY_URL);
 		Matcher matcher = Pattern.compile("total:  (\\d+) publications").matcher(content);
 		if(matcher.find()) logMetric("Number of publications",Integer.valueOf(matcher.group(1)));
@@ -97,7 +120,7 @@ public class CreateReport extends HttpServlet
 
 	public static void blogposts() throws MalformedURLException, IOException
 	{
-		System.out.println("=== C2 Activities and interactions on blog and discussion lists ===");	
+		println("=== C2 Activities and interactions on blog and discussion lists ===");	
 		int page;
 		{
 			String content = loadContent(BLOG_URL);
@@ -119,7 +142,7 @@ public class CreateReport extends HttpServlet
 
 	public static void slideShare()
 	{
-		System.out.println("=== C4 Number of figures on BIG Slideshares account ===");
+		println("=== C4 Number of figures on BIG Slideshares account ===");
 		SlideShareAPI ssapi = SlideShareAPIFactory.getSlideShareAPI(SLIDESHARE_KEY,SLIDESHARE_SECRET);
 
 		User bigProject = ssapi.getSlideshowByUser("BIG-Project");
@@ -147,7 +170,7 @@ public class CreateReport extends HttpServlet
 
 	public static void twitter() throws MalformedURLException, IOException
 	{
-		System.out.println("=== C1 Activities and Interactions on Social Media ===");
+		println("=== C1 Activities and Interactions on Social Media ===");
 		String content = loadContent(TWITTER_URL);
 		HashMap<String,Matcher> matchers = new HashMap<>();
 		matchers.put("Tweets",		Pattern.compile("title=\"(\\d+)[^\"]+\" data-nav=\"tweets\"").matcher(content));		
@@ -162,19 +185,32 @@ public class CreateReport extends HttpServlet
 		{return in.useDelimiter("\\A").next();}
 	}
 
-	public static void main(String[] args) throws MalformedURLException, IOException
+	static void createReport() throws MalformedURLException, IOException
 	{
-		System.out.println("================== Statistics that don't need credentials =============");
+		println("================== Statistics that don't need credentials =============");
 		twitter();
 		blogposts();
 		bibsonomy();
-		System.out.println("================== Statistics that need credentials =============");
-		if(args.length<4)
-		{
-//			System.err.println("Please call CreateReport with 4 parameters: (your mailing list email adress) (your mailing list password) (slideshare api-key) (slideshare shared secret)");
-			System.exit(1);
-		}
+		println("================== Statistics that need credentials =============");
 		mailinglist();
-		slideShare();
-	}		
+		slideShare();		
+	}
+	
+	@Override public void doGet(HttpServletRequest req, HttpServletResponse response) throws ServletException, IOException
+	{	
+		response.setContentType("text/html");
+		PrintWriter pw = response.getWriter();
+		htmlOut = pw;
+		pw.println("<html>");
+		pw.println("<head><title>BIG FP7 Dissemination Report</title></head>");
+		pw.println("<body>");
+		pw.println("<h1>BIG FP7 Dissemination Report </h1>");
+		createReport();
+		pw.println("</body></html>");
+	}
+	
+	public static void main(String[] args) throws MalformedURLException, IOException
+	{
+		createReport();
+	}
 }

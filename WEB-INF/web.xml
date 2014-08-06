@@ -13,6 +13,18 @@
 
   <servlet-mapping>
     <servlet-name>FollowAdder</servlet-name>
-    <url-pattern>/</url-pattern>
+    <url-pattern>/followadder</url-pattern>
   </servlet-mapping>
+
+  <servlet>
+    <servlet-name>CreateReport</servlet-name>
+    <servlet-class>eu.bigproject.dissemination.CreateReport</servlet-class>
+  </servlet>
+
+  <servlet-mapping>
+    <servlet-name>CreateReport</servlet-name>
+    <url-pattern>/createreport</url-pattern>
+  </servlet-mapping>
+  
+  <welcome-file-list><welcome-file>index.html</welcome-file></welcome-file-list>
 </web-app>    
