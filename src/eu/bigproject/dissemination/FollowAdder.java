@@ -4,6 +4,7 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.PrintWriter;
+import java.time.Instant;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
@@ -53,9 +54,12 @@ public class FollowAdder extends HttpServlet
 	private static final String	ACCESS_TOKEN_SECRET	= properties.getProperty("twitter.accesstoken.secret");
 	final static short TWEET_COUNT = 100;
 	final static short TWEET_COUNT_FROM_USER = 10;
-	final static String SINCE = "2014-06-01";
+	final static String SINCE = oneMonthAgo();
 	final static GeoLocation EUROPE_CENTER = new GeoLocation(54.9, 25.316667);
 	private static final float TRESHOLD	=  0.1f;
+	
+	static String oneMonthAgo()
+	{return Instant.ofEpochSecond(Instant.now().getEpochSecond()-30*24*3600).toString().substring(0, 10);}
 
 	static void bla() throws TwitterException, IOException
 	{
