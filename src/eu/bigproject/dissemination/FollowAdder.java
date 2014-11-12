@@ -40,7 +40,7 @@ public class FollowAdder extends HttpServlet
 		{
 			InputStream in = FollowAdder.class.getResourceAsStream("/access.properties");
 			properties.load(in);
-			in.close();			
+			in.close();
 		}
 		catch(Exception e) {throw new RuntimeException(e);}
 	}
@@ -57,7 +57,7 @@ public class FollowAdder extends HttpServlet
 	final static String SINCE = oneMonthAgo();
 	final static GeoLocation EUROPE_CENTER = new GeoLocation(54.9, 25.316667);
 	private static final float TRESHOLD	=  0.1f;
-	
+
 	static String oneMonthAgo()
 	{return Instant.ofEpochSecond(Instant.now().getEpochSecond()-30*24*3600).toString().substring(0, 10);}
 
@@ -71,16 +71,16 @@ public class FollowAdder extends HttpServlet
 	//		bla();
 	//	}
 
-	
+
 	@Override public void doGet(HttpServletRequest req, HttpServletResponse response) throws ServletException, IOException
-	{	
+	{
 		response.setContentType("text/html");
 		PrintWriter pw = response.getWriter();
 		pw.println("<html>");
 		pw.println("<head><title>BIG FP7 Follow Adder</title></head>");
 		pw.println("<body>");
 		pw.println("<h1>BIG FP7 Follow Adder</h1>");
-		
+
 		try{
 			Twitter twitter = new TwitterFactory().getInstance();
 			twitter.setOAuthConsumer(API_KEY, API_SECRET);
@@ -91,7 +91,7 @@ public class FollowAdder extends HttpServlet
 				twitter.createFriendship(req.getParameter("follow"));
 				return;
 			}
-			
+
 			Set<User> users = null;
 			{
 				Query userQuery = new Query(TAG);
@@ -109,7 +109,7 @@ public class FollowAdder extends HttpServlet
 			//		{
 			//			Query userQuery = new Query(TAG2);
 			//			userQuery.setSince(SINCE);
-			//			userQuery.setCount(TWEET_COUNT);			
+			//			userQuery.setCount(TWEET_COUNT);
 			//			QueryResult result = twitter.search(userQuery);
 			//			users.addAll(result.getTweets().stream().map(s -> s.getUser()).collect(Collectors.toSet()));
 			//		}
@@ -118,7 +118,7 @@ public class FollowAdder extends HttpServlet
 			Map<User,Float> userToScore = new HashMap<>();
 
 			for(User user: users)
-			{				
+			{
 				Query q = new Query('@'+user.getScreenName());
 				q.setSince(SINCE);
 
@@ -136,7 +136,7 @@ public class FollowAdder extends HttpServlet
 			sortedUsers.addAll(users.stream().filter(u -> userToScore.get(u)>TRESHOLD).collect(Collectors.toSet()));
 			for(User u: sortedUsers)
 			{
-				pw.println(u.getScreenName()+" "+userToScore.get(u)+" <a href=\"?follow="+u.getScreenName()+"\">Follow</a>");							
+				pw.println(u.getScreenName()+" "+userToScore.get(u)+" <a href=\"?follow="+u.getScreenName()+"\">Follow</a>");
 			}
 			pw.println("</body></html>");
 		}
@@ -146,7 +146,7 @@ public class FollowAdder extends HttpServlet
 
 	//	static boolean poll(String message)
 	//	{
-	//		
+	//
 	//	}
 
 }

@@ -35,12 +35,17 @@ public class CreateReport extends HttpServlet
 	private static final int	MINIMAL_RECALCULATE_INTERVAL_SECONDS	= 60;
 	private static final String BIBSONOMY_URL	= "http://www.bibsonomy.org/user/bigfp7";
 	private static final String TWITTER_URL	= "https://twitter.com/BIG_FP7";
-	private static final String	MAILINGLIST_URL	= "http://lists.atosresearch.eu/mailman/private/bigdata/";
+	private static final String	MAIN_MAILINGLIST_URL	= "http://lists.atosresearch.eu/mailman/private/bigdata/";
 	private static final String	BLOG_URL	= "http://big-project.eu/blog";
 	private static final String	INTERVIEW_URL	= "http://big-project.eu/text-interviews";
 
-	private static final String MAILINGLIST_EMAIL = FollowAdder.properties.getProperty("mailinglist.email");
-	private static final String MAILINGLIST_PASSWORD = FollowAdder.properties.getProperty("mailinglist.password");
+	private static final String MAIN_MAILINGLIST_EMAIL = FollowAdder.properties.getProperty("mailinglist.email");
+	private static final String MAIN_MAILINGLIST_PASSWORD = FollowAdder.properties.getProperty("mailinglist.password");
+
+	private static final String OTHER_MAILINGLISTS_PREFIX = "http://lists.atosresearch.eu/mailman/private/";
+	private static final String[] OTHER_MAILINGLISTS = {"telcomedia-sf","health-sf","publicsector-sf","financialservices-sf","manuretailenertrans-sf","datacuration-wg","datastorage-wg","dataanalysis-wg","datausage-wg"};
+	private static final String MAILINGLIST_ADMIN_USERNAME = FollowAdder.properties.getProperty("mailinglist.admin.username");
+	private static final String MAILINGLIST_ADMIN_PASSWORD = FollowAdder.properties.getProperty("mailinglist.admin.password");
 
 	private static final String SLIDESHARE_KEY = FollowAdder.properties.getProperty("slideshare.key");
 	private static final String SLIDESHARE_SECRET = FollowAdder.properties.getProperty("slideshare.secret");
@@ -73,13 +78,13 @@ public class CreateReport extends HttpServlet
 		metrics.put(m, v);
 	}
 
-	public static String loadPostContent(String url) throws MalformedURLException, IOException
+	public static String loadPostContent(String url,String username,String password) throws MalformedURLException, IOException
 	{
 		HttpURLConnection connection = (HttpURLConnection) new URL(url).openConnection();
 		connection.setDoOutput(true);
 		connection.setRequestMethod("POST");
 		OutputStreamWriter writer = new OutputStreamWriter(connection.getOutputStream());
-		writer.write("username="+MAILINGLIST_EMAIL+"&password="+MAILINGLIST_PASSWORD);
+		writer.write("username="+username+"&password="+password);
 		writer.close();
 
 		if (connection.getResponseCode() == HttpURLConnection.HTTP_OK)
@@ -113,31 +118,43 @@ public class CreateReport extends HttpServlet
 
 	static void println() {sb.append("</br>\n");}
 
-	public static void mailinglist() throws MalformedURLException, IOException
+	public static void mailinglist(String metric, String url, String username, String password) throws MalformedURLException, IOException
 	{
-
+		if(!url.endsWith("/")) url = url+"/";
 		println("<h3>C2 Activities and interactions on blog and discussion lists</h3>");
 
-		String content = loadPostContent(MAILINGLIST_URL);
+		String content = loadPostContent(url,username,password);
 		//				println(content);
 		Matcher matcher = Pattern.compile("href=\"([^\"]+/date.html)\">\\[ Date \\]").matcher(content);
-		int messageCount2014 = 0;
-		int messageCountUntil2013Inclusive = 952;
-		System.out.print("Calculating mailing list post count");
+		int messageCount = 0;
+		int mainMailinglistMessageCountUntil2013Inclusive = 952;
+		System.out.print("Calculating mailing list post count for "+url);
 		while(matcher.find())
 		{
 			System.out.print(".");
 			String monthUrl = matcher.group(1);
-			if(!monthUrl.contains("2014")) continue;
-			String newContent = loadPostContent(MAILINGLIST_URL+monthUrl);
+			// faster processing of main mailinglist
+			if(url.equals(MAIN_MAILINGLIST_URL)&&!monthUrl.contains("2014")) continue;
+			String newContent = loadPostContent(url+monthUrl,username,password);
 			Matcher singleMatcher = Pattern.compile("<b>Messages:</b> (\\d+)<p>").matcher(newContent);
 			singleMatcher.find();
-			messageCount2014+=Integer.valueOf(singleMatcher.group(1));
+			messageCount+=Integer.valueOf(singleMatcher.group(1));
 			//			if(!matcher.group(1).contains("2014")) messageCountUntil2013Inclusive+=Integer.valueOf(singleMatcher.group(1));
 		}
 		println();
-		logMetric(MESSAGE_COUNT,messageCount2014+messageCountUntil2013Inclusive);
+		if(url.equals(MAIN_MAILINGLIST_URL)) messageCount+=mainMailinglistMessageCountUntil2013Inclusive;
+		logMetric(metric,messageCount);
 		//		println("Message Count until 2013 inclusive\t"+messageCountUntil2013Inclusive);
+	}
+
+	public static void mailinglist() throws MalformedURLException, IOException
+	{
+		//		mailinglist(MESSAGE_COUNT,MAIN_MAILINGLIST_URL,MAIN_MAILINGLIST_EMAIL,MAIN_MAILINGLIST_PASSWORD);
+		for(String listName: OTHER_MAILINGLISTS)
+		{
+			String url = OTHER_MAILINGLISTS_PREFIX+listName;
+			mailinglist(MESSAGE_COUNT+'-'+listName,url,MAILINGLIST_ADMIN_USERNAME, MAILINGLIST_ADMIN_PASSWORD);
+		}
 	}
 
 	public static void bibsonomy() throws MalformedURLException, IOException

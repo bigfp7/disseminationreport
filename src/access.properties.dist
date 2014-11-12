@@ -4,5 +4,7 @@
 #twitter.accesstoken.secret=
 #mailinglist.email=
 #mailinglist.password=
+#mailinglist.admin.username=
+#mailinglist.admin.password=
 #slideshare.key=
 #slideshare.secret=
