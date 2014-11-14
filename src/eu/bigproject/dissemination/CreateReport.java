@@ -43,6 +43,9 @@ public class CreateReport extends HttpServlet
 	private static final String MAIN_MAILINGLIST_PASSWORD = FollowAdder.properties.getProperty("mailinglist.password");
 
 	private static final String OTHER_MAILINGLISTS_PREFIX = "http://lists.atosresearch.eu/mailman/private/";
+	private static final String OTHER_MAILINGLISTS_ROSTER_PREFIX = "http://lists.atosresearch.eu/mailman/admin/";
+	private static final String OTHER_MAILINGLISTS_ROSTER_SUFFIX = "/members/list";
+
 	private static final String[] OTHER_MAILINGLISTS = {"telcomedia-sf","health-sf","publicsector-sf","financialservices-sf","manuretailenertrans-sf","datacuration-wg","datastorage-wg","dataanalysis-wg","datausage-wg"};
 	private static final String MAILINGLIST_ADMIN_USERNAME = FollowAdder.properties.getProperty("mailinglist.admin.username");
 	private static final String MAILINGLIST_ADMIN_PASSWORD = FollowAdder.properties.getProperty("mailinglist.admin.password");
@@ -78,13 +81,13 @@ public class CreateReport extends HttpServlet
 		metrics.put(m, v);
 	}
 
-	public static String loadPostContent(String url,String username,String password) throws MalformedURLException, IOException
+	public static String loadPostContent(String url,String usernameParam, String username,String passwordParam, String password) throws MalformedURLException, IOException
 	{
 		HttpURLConnection connection = (HttpURLConnection) new URL(url).openConnection();
 		connection.setDoOutput(true);
 		connection.setRequestMethod("POST");
 		OutputStreamWriter writer = new OutputStreamWriter(connection.getOutputStream());
-		writer.write("username="+username+"&password="+password);
+		writer.write(usernameParam+"="+username+"&"+passwordParam+"="+password);
 		writer.close();
 
 		if (connection.getResponseCode() == HttpURLConnection.HTTP_OK)
@@ -94,10 +97,17 @@ public class CreateReport extends HttpServlet
 				return in.useDelimiter("\\A").next();
 			}
 		}
-		else
-		{
-			throw new RuntimeException(connection.getResponseMessage());
-		}
+		else {throw new RuntimeException(connection.getResponseMessage());}
+	}
+
+	public static String loadPostContentUser(String url,String username,String password) throws MalformedURLException, IOException
+	{
+		return loadPostContent(url, "username", username, "password", password);
+	}
+
+	public static String loadPostContentAdmin(String url,String username,String password) throws MalformedURLException, IOException
+	{
+		return loadPostContent(url, "notused", username, "adminpw", password);
 	}
 
 	static StringBuffer sb = new StringBuffer();
@@ -118,42 +128,54 @@ public class CreateReport extends HttpServlet
 
 	static void println() {sb.append("</br>\n");}
 
-	public static void mailinglist(String metric, String url, String username, String password) throws MalformedURLException, IOException
+	public static void mailinglistRoster(String listName,String metric, String username, String password) throws MalformedURLException, IOException
+	{
+		String url = OTHER_MAILINGLISTS_ROSTER_PREFIX+listName+OTHER_MAILINGLISTS_ROSTER_SUFFIX;
+		String content = loadPostContentAdmin(url,username,password);
+//		System.out.print("Calculating mailing list member count for "+url);
+		Matcher matcher = Pattern.compile("(\\d+) members total").matcher(content);
+		matcher.find();
+		int memberCount = Integer.valueOf(matcher.group(1));
+		metric=metric+'-'+"roster";
+		logMetric(metric,memberCount);
+	}
+
+	public static void mailinglist(String listName, String metric, String url, String username, String password) throws MalformedURLException, IOException
 	{
 		if(!url.endsWith("/")) url = url+"/";
-		println("<h3>C2 Activities and interactions on blog and discussion lists</h3>");
 
-		String content = loadPostContent(url,username,password);
+		String content = loadPostContentUser(url,username,password);
 		//				println(content);
 		Matcher matcher = Pattern.compile("href=\"([^\"]+/date.html)\">\\[ Date \\]").matcher(content);
 		int messageCount = 0;
 		int mainMailinglistMessageCountUntil2013Inclusive = 952;
-		System.out.print("Calculating mailing list post count for "+url);
+//		System.out.print("Calculating mailing list post count for "+url);
 		while(matcher.find())
 		{
-			System.out.print(".");
+//			System.out.print(".");
 			String monthUrl = matcher.group(1);
-			// faster processing of main mailinglist
+			// faster processing of main mailinglist by manually adding precalculated 2013 values and skipping those in the counting
 			if(url.equals(MAIN_MAILINGLIST_URL)&&!monthUrl.contains("2014")) continue;
-			String newContent = loadPostContent(url+monthUrl,username,password);
+			String newContent = loadPostContentUser(url+monthUrl,username,password);
 			Matcher singleMatcher = Pattern.compile("<b>Messages:</b> (\\d+)<p>").matcher(newContent);
 			singleMatcher.find();
 			messageCount+=Integer.valueOf(singleMatcher.group(1));
-			//			if(!matcher.group(1).contains("2014")) messageCountUntil2013Inclusive+=Integer.valueOf(singleMatcher.group(1));
 		}
 		println();
 		if(url.equals(MAIN_MAILINGLIST_URL)) messageCount+=mainMailinglistMessageCountUntil2013Inclusive;
 		logMetric(metric,messageCount);
-		//		println("Message Count until 2013 inclusive\t"+messageCountUntil2013Inclusive);
+		// roster needs admin credentials but we don't have those for main mailinglist
+		if(!url.equals(MAIN_MAILINGLIST_URL)) mailinglistRoster(listName,metric, username, password);
 	}
 
 	public static void mailinglist() throws MalformedURLException, IOException
 	{
+		println("<h3>C2 Activities and interactions on blog and discussion lists</h3>");
 		//		mailinglist(MESSAGE_COUNT,MAIN_MAILINGLIST_URL,MAIN_MAILINGLIST_EMAIL,MAIN_MAILINGLIST_PASSWORD);
 		for(String listName: OTHER_MAILINGLISTS)
 		{
 			String url = OTHER_MAILINGLISTS_PREFIX+listName;
-			mailinglist(MESSAGE_COUNT+'-'+listName,url,MAILINGLIST_ADMIN_USERNAME, MAILINGLIST_ADMIN_PASSWORD);
+			mailinglist(listName,MESSAGE_COUNT+'-'+listName,url,MAILINGLIST_ADMIN_USERNAME, MAILINGLIST_ADMIN_PASSWORD);
 		}
 	}
 
